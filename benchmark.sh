@@ -1,15 +1,27 @@
 #!/bin/bash
 
-if [ $# -eq 0 ]; then
-    echo "Usage: $0 [prefill|decode]"
+if [[ $# -lt 2 ]]; then
+    echo "Usage: $0 <mode> <profile>"
+    echo "mode: prefill or decode"
+    echo "profile: true or false"
     exit 1
 fi
+CONDA_ENV="sglang-pd-old-ep"
+# CONDA_ENV="sglang-pd"
+CONDA_PATH="/ssd/tianr/miniconda3"
+
+# 初始化conda
+source "$CONDA_PATH/etc/profile.d/conda.sh"
+
+# 激活环境并检查是否成功
+conda activate "$CONDA_ENV"
+echo "Activated conda environment: $CONDA_ENV"
 
 MODE=$1
 PROFILE=$2
 
-DECODE_JOB_NAME=$USER-sglang-decode
-PREFILL_JOB_NAME=$USER-sglang-prefill
+PREFILL_JOB_NAME='run_prefill.sh'
+DECODE_JOB_NAME='run_decode.sh'
 
 DECODE_MASTER_NODE=$(scontrol show hostnames $(squeue -u $USER -n $DECODE_JOB_NAME -h -o "%N") | head -n1)
 PREFILL_MASTER_NODE=$(scontrol show hostnames $(squeue -u $USER -n $PREFILL_JOB_NAME -h -o "%N") | head -n1)
@@ -24,7 +36,7 @@ elif [ "$MODE" == "decode" ]; then
     SLOW_COMMAND="curl -H 'Content-Type: application/json' -d '{\"forward_sleep_time\": 90.0}' -X POST 'http://$DECODE_MASTER_NODE/slow_down'"
     echo "Slow command: $SLOW_COMMAND"
     eval $SLOW_COMMAND
-    sleep 10
+    sleep 5
 else
     echo "Error: Invalid mode '$MODE'. Use 'prefill' or 'decode'."
     exit 1
@@ -44,16 +56,16 @@ eval $COMMAND &
 
 if [ "$MODE" == "decode" ]; then
     sleep 120
-    DESLOW_COMMAND="curl -H 'Content-Type: application/json' -d '{\"forward_sleep_time\": null' -X POST 'http://$DECODE_MASTER_NODE/slow_down'"
-    echo "Slow command: $SLOW_COMMAND"
+    DESLOW_COMMAND="curl -H 'Content-Type: application/json' -d '{\"forward_sleep_time\": null}' -X POST 'http://$DECODE_MASTER_NODE/slow_down'"
+    echo "Deslow command: $DESLOW_COMMAND"
     eval $DESLOW_COMMAND
 fi
 
 
-if ["$PROFILE" == true]; then
+if [ "$PROFILE" == true ]; then
     if [ "$MODE" == "prefill" ]; then
         echo "Profiling prefill job"
-        date=$(date '+%Y-%m-%d_%H-%M-%S')
+        date=$(date '+%Y-%m-%d_%H-%M')
         TRACE_DIR="/ssd/tianr/trace/prefill/$USER/$date"
         mkdir -p $TRACE_DIR
         PROFILE_COMMAND="curl -X POST http://$PREFILL_MASTER_NODE:30000/start_profile \
@@ -63,12 +75,12 @@ if ["$PROFILE" == true]; then
             \"num_steps\": 8,
             \"record_shapes\": true
         }'"
-        sleep 15
+        sleep 40
         echo "Profile command: $PROFILE_COMMAND"
         eval $PROFILE_COMMAND 
     elif [ "$MODE" == "decode" ]; then
         echo "Profiling decode job"
-        date=$(date '+%Y-%m-%d_%H-%M-%S')
+        date=$(date '+%Y-%m-%d_%H-%M')
         TRACE_DIR="/ssd/tianr/trace/decode/$USER/$date"
         mkdir -p $TRACE_DIR
         PROFILE_COMMAND="curl -X POST http://$DECODE_MASTER_NODE:30000/start_profile \
@@ -78,7 +90,7 @@ if ["$PROFILE" == true]; then
             \"num_steps\": 8,
             \"record_shapes\": true
         }'"     
-        sleep 15  
+        sleep 40
         echo "Profile command: $PROFILE_COMMAND"
         eval $PROFILE_COMMAND
     fi
