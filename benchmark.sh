@@ -6,16 +6,6 @@ if [[ $# -lt 2 ]]; then
     echo "profile: true or false"
     exit 1
 fi
-CONDA_ENV="sglang-pd-old-ep"
-# CONDA_ENV="sglang-pd"
-CONDA_PATH="/ssd/tianr/miniconda3"
-
-# 初始化conda
-source "$CONDA_PATH/etc/profile.d/conda.sh"
-
-# 激活环境并检查是否成功
-conda activate "$CONDA_ENV"
-echo "Activated conda environment: $CONDA_ENV"
 
 MODE=$1
 PROFILE=$2
@@ -32,8 +22,8 @@ if [ "$MODE" == "prefill" ]; then
     INPUT_LEN=4096
 elif [ "$MODE" == "decode" ]; then
     BATCH_SIZE=40000
-    INPUT_LEN=4000
-    SLOW_COMMAND="curl -H 'Content-Type: application/json' -d '{\"forward_sleep_time\": 90.0}' -X POST 'http://$DECODE_MASTER_NODE/slow_down'"
+    INPUT_LEN=2000
+    SLOW_COMMAND="curl -H 'Content-Type: application/json' -d '{\"forward_sleep_time\": 90.0}' -X POST 'http://$DECODE_MASTER_NODE:30000/slow_down'"
     echo "Slow command: $SLOW_COMMAND"
     eval $SLOW_COMMAND
     sleep 5
@@ -55,12 +45,11 @@ echo "Running command: $COMMAND"
 eval $COMMAND &
 
 if [ "$MODE" == "decode" ]; then
-    sleep 120
-    DESLOW_COMMAND="curl -H 'Content-Type: application/json' -d '{\"forward_sleep_time\": null}' -X POST 'http://$DECODE_MASTER_NODE/slow_down'"
+    sleep 260
+    DESLOW_COMMAND="curl -H 'Content-Type: application/json' -d '{\"forward_sleep_time\": null}' -X POST 'http://$DECODE_MASTER_NODE:30000/slow_down'"
     echo "Deslow command: $DESLOW_COMMAND"
     eval $DESLOW_COMMAND
 fi
-
 
 if [ "$PROFILE" == true ]; then
     if [ "$MODE" == "prefill" ]; then
@@ -75,7 +64,6 @@ if [ "$PROFILE" == true ]; then
             \"num_steps\": 8,
             \"record_shapes\": true
         }'"
-        sleep 40
         echo "Profile command: $PROFILE_COMMAND"
         eval $PROFILE_COMMAND 
     elif [ "$MODE" == "decode" ]; then
@@ -87,10 +75,9 @@ if [ "$PROFILE" == true ]; then
         -H 'Content-Type: application/json' \
         -d '{
             \"output_dir\": \"$TRACE_DIR\",
-            \"num_steps\": 8,
+            \"num_steps\": 10,
             \"record_shapes\": true
         }'"     
-        sleep 40
         echo "Profile command: $PROFILE_COMMAND"
         eval $PROFILE_COMMAND
     fi
