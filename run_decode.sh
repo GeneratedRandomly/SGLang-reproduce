@@ -28,8 +28,8 @@ export SGL_DG_CACHE_DIR=/tmp/${USER}/sgl_deepgemm_cache
 export SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK=256
 export SGLANG_DISAGGREGATION_WAITING_TIMEOUT=6000
 INIT_EXPERT_LOCATION="/ssd/tianr/test-sglang/attachment_ep_statistics/decode_in2000out100.json"
-export SGLANG_EXPERT_DISTRIBUTION_RECORDER_DIR="/ssd/tianr/test-sglang/sglang-reproduce/expert_distribution1"
-export PYTHONUNBUFFERED=1
+# export SGLANG_EXPERT_DISTRIBUTION_RECORDER_DIR="/ssd/tianr/test-sglang/sglang-reproduce/expert_distribution1"
+# export PYTHONUNBUFFERED=1
 
 COMMAND="python3 -m sglang.launch_server \
 --model-path /ssd/DeepSeek-R1 \
@@ -51,13 +51,14 @@ COMMAND="python3 -m sglang.launch_server \
 --disable-radix-cache \
 --watchdog-timeout 1000000 \
 --deepep-mode low_latency \
---mem-fraction-static 0.8079 \
+--mem-fraction-static 0.8279 \
 --max-running-requests $((SLURM_NNODES * 2048)) \
 --context-length 4500 \
---disable-cuda-graph \
+--cuda-graph-bs 256 \
 --num-reserved-decode-tokens 102 \
---expert-distribution-recorder-mode stat \
---expert-distribution-recorder-buffer-size -1 
+--ep-num-redundant-experts 32 \
+--init-expert-location $INIT_EXPERT_LOCATION \
+--enable-two-batch-overlap \
 "
 
 export TZ=UTC-8

@@ -1,5 +1,5 @@
-#!/bin/bash                                                         
-                                                                    
+#!/bin/bash
+                                                                                                     
 # srun -N 2 -n 2 --gres=gpu:8 xxx
 
 if [[ $# -lt 1 ]]; then

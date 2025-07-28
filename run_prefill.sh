@@ -27,7 +27,7 @@ export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 export CUDA_HOME=/usr/local/cuda
 export TRITON_CACHE_DIR=/tmp/${USER}/triton_cache
 export SGL_DG_CACHE_DIR=/tmp/${USER}/sgl_deepgemm_cache
-export SGLANG_DISAGGREGATION_BOOTSTRAP_TIMEOUT=6000
+# export SGLANG_DISAGGREGATION_BOOTSTRAP_TIMEOUT=6000
 
 COMMAND="python3 -m sglang.launch_server \
 --model-path /ssd/DeepSeek-R1 \
